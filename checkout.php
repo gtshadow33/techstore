@@ -6,7 +6,7 @@ $data     = json_decode(file_get_contents("php://input"), true);
 $cart     = $data['cart']     ?? [];
 $email    = trim($data['email']    ?? '');
 $password = trim($data['password'] ?? '');
-$direcion = trim($data['direcion'] ?? '');
+$direcion = trim($data['direccion'] ?? '');
 
 if (!$email || !$password || empty($cart)) {
     echo json_encode(["ok" => false, "error" => "Datos inválidos"]);
