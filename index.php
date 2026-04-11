@@ -116,10 +116,18 @@ $filtered = $stmt->fetchAll();
   </div>
   <div class="cart-items" id="cartItems"></div>
   <div class="cart-footer" id="cartFooter" style="display:none">
-    <div class="cart-total">Total <span id="cartTotal">€0.00</span></div>
-    <input type="email" id="email" placeholder="Tu correo electrónico" required style="width:100%;padding:10px;margin-bottom:10px;">
-    <button class="checkout-btn" onclick="checkout()">Proceder al pago →</button>
-  </div>
+  <div class="cart-total">Total <span id="cartTotal">€0.00</span></div>
+ 
+  <input  type="email"    id="email"    placeholder="Tu correo electrónico" style="width:100%;padding:10px;margin-bottom:8px;">
+  <input  type="password" id="password" placeholder="Contraseña (nueva o existente)" style="width:100%;padding:10px;margin-bottom:4px;">
+  <p id="cart-hint" style="font-size:.75rem;color:var(--muted,#888);margin:0 0 10px">
+    Si ya tienes cuenta introduce tu contraseña. Si no, se creará automáticamente.
+  </p>
+ 
+  <div id="cart-error" style="display:none;color:#ff6b6b;font-size:.8rem;margin-bottom:8px;padding:6px 10px;border:1px solid #ff6b6b;border-radius:4px"></div>
+ 
+  <button class="checkout-btn" onclick="checkout()">Proceder al pago →</button>
+</div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -196,19 +204,20 @@ function showToast(msg) {
 
 
 function checkout() {
-  const email = document.getElementById('email').value.trim();
-
-  if (!email) {
-    showToast('Introduce tu correo');
-    return;
-  }
-
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value.trim();
+  const errEl    = document.getElementById('cart-error');
+ 
+  errEl.style.display = 'none';
+ 
+  if (!email) { showToast('Introduce tu correo'); return; }
+  if (!password) { showToast('Introduce tu contraseña'); return; }
   if (cart.length === 0) return;
-
+ 
   fetch('checkout.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ cart, email })
+    body: JSON.stringify({ cart, email, password })
   })
   .then(res => res.json())
   .then(data => {
@@ -216,13 +225,20 @@ function checkout() {
       cart = [];
       saveCart();
       renderCart();
+      document.getElementById('email').value    = '';
+      document.getElementById('password').value = '';
       showToast('✔ Pedido realizado');
     } else {
-      showToast('Error en el pedido');
+      // Mostrar error inline dentro del panel
+      errEl.textContent    = data.error || 'Error en el pedido';
+      errEl.style.display  = 'block';
     }
+  })
+  .catch(() => {
+    errEl.textContent   = 'Error de conexión';
+    errEl.style.display = 'block';
   });
 }
-
 renderCart();
 </script>
 </body>
