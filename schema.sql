@@ -37,6 +37,9 @@ CREATE TABLE IF NOT EXISTS admins (
     password VARCHAR(255) NOT NULL
 );
 
+
+
+
 INSERT INTO admins (username, password)
 VALUES ('admin', '$2a$12$bZ.CFXfB.uWx5P6qf8bZT.3v2QsWUKaxARO6WYlLSSQBfCxJEx5gG');
 

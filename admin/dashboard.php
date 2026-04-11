@@ -82,14 +82,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         header("Location: dashboard.php?tab=users&msg=user_deleted"); exit;
     }
 
-    // --- PEDIDO: CAMBIAR ESTADO ---
+    // --- PEDIDO: CAMBIAR ESTADO (aplica a todos los del carrito) ---
     if ($_POST['action'] === 'update_order_status') {
-        $oid    = (int)$_POST['oid'];
-        $estado = $_POST['estado'] ?? 'pendiente';
-        $allowed = ['pendiente','procesando','enviado','entregado','cancelado'];
-        if (in_array($estado, $allowed)) {
-            $stmt = $db->prepare("UPDATE pedidos SET estado=:estado WHERE id=:id");
-            $stmt->execute([':estado' => $estado, ':id' => $oid]);
+        $cart_key = $_POST['cart_key'] ?? '';
+        $estado   = $_POST['estado']   ?? 'pendiente';
+        $ids      = json_decode($_POST['cart_ids'] ?? '[]', true);
+        $allowed  = ['pendiente','procesando','enviado','entregado','cancelado'];
+        if (in_array($estado, $allowed) && !empty($ids)) {
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $stmt = $db->prepare("UPDATE pedidos SET estado=? WHERE id IN ($placeholders)");
+            $stmt->execute(array_merge([$estado], $ids));
         }
         header("Location: dashboard.php?tab=orders&msg=order_updated"); exit;
     }
@@ -101,6 +103,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
         $stmt->execute([':id' => $oid]);
         header("Location: dashboard.php?tab=orders&msg=order_deleted"); exit;
     }
+
+    // --- CARRITO COMPLETO: DELETE ---
+    if ($_POST['action'] === 'delete_cart') {
+        $ids = json_decode($_POST['cart_ids'] ?? '[]', true);
+        if (!empty($ids)) {
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $stmt = $db->prepare("DELETE FROM pedidos WHERE id IN ($placeholders)");
+            $stmt->execute($ids);
+        }
+        header("Location: dashboard.php?tab=orders&msg=order_deleted"); exit;
+    }
 }
 
 // ─── CARGAR DATOS ────────────────────────────────────────────────
@@ -108,13 +121,42 @@ $products = $db->query("SELECT * FROM products ORDER BY id DESC")->fetchAll();
 $users    = $db->query("SELECT id, name, email, created_at FROM usuarios ORDER BY id DESC")->fetchAll();
 $orders   = $db->query("
     SELECT p.id, p.quantity, p.price, p.direccion, p.estado, p.created_at,
+           u.id AS usuario_id,
            u.name AS user_name, u.email AS user_email,
-           pr.name AS product_name
+           pr.name AS product_name,
+           DATE(p.created_at) AS order_date
     FROM pedidos p
     LEFT JOIN usuarios u  ON u.id  = p.usuario_id
     LEFT JOIN products pr ON pr.id = p.product_id
     ORDER BY p.id DESC
 ")->fetchAll();
+
+// ─── AGRUPAR PEDIDOS POR USUARIO + FECHA (mismo carrito) ─────────
+$grouped_orders = [];
+foreach ($orders as $o) {
+    $key = ($o['usuario_id'] ?? 'guest') . '_' . $o['order_date'];
+    if (!isset($grouped_orders[$key])) {
+        $grouped_orders[$key] = [
+            'key'        => $key,
+            'usuario_id' => $o['usuario_id'],
+            'user_name'  => $o['user_name'],
+            'user_email' => $o['user_email'],
+            'direccion'  => $o['direccion'],
+            'estado'     => $o['estado'],
+            'created_at' => $o['created_at'],
+            'order_date' => $o['order_date'],
+            'items'      => [],
+            'total'      => 0,
+        ];
+    }
+    $grouped_orders[$key]['items'][] = [
+        'id'           => $o['id'],
+        'product_name' => $o['product_name'],
+        'quantity'     => $o['quantity'],
+        'price'        => $o['price'],
+    ];
+    $grouped_orders[$key]['total'] += $o['price'] * $o['quantity'];
+}
 
 // ─── EDIT MODES ──────────────────────────────────────────────────
 $editProduct = null;
@@ -163,37 +205,7 @@ $activeTab = $_GET['tab'] ?? 'products';
 <title>Admin Dashboard — TechStore</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
 <link href="./dasj.css" rel="stylesheet">
-<style>
-/* ── TAB NAV ──────────────────────────────────────────────── */
-.tab-nav { display:flex; gap:4px; margin-bottom:2rem; border-bottom:1px solid var(--border,#333); }
-.tab-btn {
-  padding:.6rem 1.4rem; font-family:'Syne',sans-serif; font-size:.9rem;
-  background:none; border:none; border-bottom:3px solid transparent;
-  color:var(--muted,#888); cursor:pointer; transition:.2s;
-}
-.tab-btn.active { color:var(--accent,#00ff88); border-bottom-color:var(--accent,#00ff88); }
-.tab-panel { display:none; }
-.tab-panel.active { display:block; }
 
-/* ── ESTADO BADGES ────────────────────────────────────────── */
-.badge {
-  display:inline-block; padding:2px 10px; border-radius:20px;
-  font-size:.75rem; font-family:'Space Mono',monospace; font-weight:700;
-}
-.badge-pendiente  { background:#333; color:#aaa; }
-.badge-procesando { background:#1a3a5c; color:#6ac7ff; }
-.badge-enviado    { background:#1a3a2e; color:#55e8a0; }
-.badge-entregado  { background:#1a3a2e; color:#00ff88; }
-.badge-cancelado  { background:#3a1a1a; color:#ff6b6b; }
-
-/* ── SELECT DE ESTADO ─────────────────────────────────────── */
-.estado-select {
-  font-family:'Space Mono',monospace; font-size:.8rem;
-  background:var(--bg2,#1a1a1a); color:var(--text,#eee);
-  border:1px solid var(--border,#333); border-radius:4px;
-  padding:4px 8px; cursor:pointer;
-}
-</style>
 </head>
 <body>
 <div class="topbar">
@@ -238,8 +250,8 @@ $activeTab = $_GET['tab'] ?? 'products';
       <div class="stat-value accent"><?= count($users) ?></div>
     </div>
     <div class="stat-card">
-      <div class="stat-label">Pedidos</div>
-      <div class="stat-value accent2"><?= count($orders) ?></div>
+      <div class="stat-label">Carritos</div>
+      <div class="stat-value accent2"><?= count($grouped_orders) ?></div>
     </div>
     <div class="stat-card">
       <div class="stat-label">Ingresos totales</div>
@@ -402,47 +414,85 @@ $activeTab = $_GET['tab'] ?? 'products';
   </div>
 
   <!-- ══════════════════════════════════════════════════════════
-       TAB: PEDIDOS
+       TAB: PEDIDOS (agrupados por carrito)
   ══════════════════════════════════════════════════════════ -->
   <div id="tab-orders" class="tab-panel <?= $activeTab==='orders'?'active':'' ?>">
 
-    <div class="section-header"><h2>Pedidos (<?= count($orders) ?>)</h2></div>
+    <div class="section-header">
+      <h2>
+        Pedidos
+        <span class="cart-count"><?= count($grouped_orders) ?> carritos · <?= count($orders) ?> líneas</span>
+      </h2>
+    </div>
+
     <div class="table-wrap">
       <table>
         <thead>
-          <tr><th>#</th><th>Cliente</th><th>Producto</th><th>Qty</th><th>Total</th><th>Dirección</th><th>Estado</th><th>Fecha</th><th>Acción</th></tr>
+          <tr>
+            <th>Cliente</th>
+            <th>Productos del carrito</th>
+            <th>Dirección</th>
+            <th>Estado</th>
+            <th>Fecha</th>
+            <th>Acción</th>
+          </tr>
         </thead>
         <tbody>
-          <?php foreach ($orders as $o): ?>
+          <?php foreach ($grouped_orders as $cart):
+            $cart_ids = array_column($cart['items'], 'id');
+            $cart_ids_json = htmlspecialchars(json_encode($cart_ids));
+          ?>
           <tr>
-            <td style="font-family:'Space Mono',monospace;color:var(--muted)">#<?= $o['id'] ?></td>
+            <!-- Cliente -->
             <td>
-              <strong><?= htmlspecialchars($o['user_name'] ?? '—') ?></strong><br>
-              <small style="color:var(--muted);font-size:.75rem"><?= htmlspecialchars($o['user_email'] ?? '') ?></small>
+              <strong><?= htmlspecialchars($cart['user_name'] ?? '—') ?></strong><br>
+              <small style="color:var(--muted);font-size:.75rem"><?= htmlspecialchars($cart['user_email'] ?? '') ?></small>
             </td>
-            <td><?= htmlspecialchars($o['product_name'] ?? '—') ?></td>
-            <td style="text-align:center"><?= $o['quantity'] ?></td>
-            <td class="price-cell">€<?= number_format($o['price'] * $o['quantity'], 2) ?></td>
+
+            <!-- Productos del carrito -->
+            <td style="min-width:220px">
+              <?php foreach ($cart['items'] as $item): ?>
+              <div class="cart-item">
+                <span class="cart-item-name"><?= htmlspecialchars($item['product_name'] ?? '—') ?></span>
+                <span class="cart-item-qty">×<?= $item['quantity'] ?></span>
+                <span class="cart-item-price">€<?= number_format($item['price'] * $item['quantity'], 2) ?></span>
+                <form method="POST" style="display:inline" onsubmit="return confirm('¿Eliminar esta línea?')">
+                  <input type="hidden" name="action" value="delete_order">
+                  <input type="hidden" name="oid" value="<?= $item['id'] ?>">
+                  <button type="submit" class="cart-item-del" title="Eliminar línea #<?= $item['id'] ?>">✕</button>
+                </form>
+              </div>
+              <?php endforeach; ?>
+              <div class="cart-total">Total: €<?= number_format($cart['total'], 2) ?></div>
+            </td>
+
+            <!-- Dirección -->
             <td style="font-size:.8rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
-              <?= htmlspecialchars($o['direccion']) ?>
+              <?= htmlspecialchars($cart['direccion']) ?>
             </td>
+
+            <!-- Estado (actualiza todos los pedidos del carrito) -->
             <td>
               <form method="POST" style="display:inline">
                 <input type="hidden" name="action" value="update_order_status">
-                <input type="hidden" name="oid" value="<?= $o['id'] ?>">
+                <input type="hidden" name="cart_ids" value="<?= $cart_ids_json ?>">
                 <select name="estado" class="estado-select" onchange="this.form.submit()">
                   <?php foreach (['pendiente','procesando','enviado','entregado','cancelado'] as $s): ?>
-                    <option value="<?= $s ?>" <?= $o['estado']===$s?'selected':'' ?>><?= ucfirst($s) ?></option>
+                    <option value="<?= $s ?>" <?= $cart['estado']===$s?'selected':'' ?>><?= ucfirst($s) ?></option>
                   <?php endforeach; ?>
                 </select>
               </form>
             </td>
-            <td style="font-size:.8rem;color:var(--muted)"><?= substr($o['created_at'],0,10) ?></td>
+
+            <!-- Fecha -->
+            <td style="font-size:.8rem;color:var(--muted)"><?= $cart['order_date'] ?></td>
+
+            <!-- Eliminar carrito completo -->
             <td>
-              <form method="POST" onsubmit="return confirm('¿Eliminar pedido?')">
-                <input type="hidden" name="action" value="delete_order">
-                <input type="hidden" name="oid" value="<?= $o['id'] ?>">
-                <button type="submit" class="btn btn-sm btn-danger">🗑</button>
+              <form method="POST" onsubmit="return confirm('¿Eliminar todo el carrito (<?= count($cart['items']) ?> productos)?')">
+                <input type="hidden" name="action" value="delete_cart">
+                <input type="hidden" name="cart_ids" value="<?= $cart_ids_json ?>">
+                <button type="submit" class="btn btn-sm btn-danger">🗑 Todo</button>
               </form>
             </td>
           </tr>

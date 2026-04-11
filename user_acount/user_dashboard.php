@@ -2,23 +2,21 @@
 session_start();
 
 if (!isset($_SESSION['user_id'])) {
-    header('Location: user_login.php');
+    header('Location: login.php');
     exit;
 }
 
-require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/../db.php';
 $db = getDB();
 
 $uid = (int)$_SESSION['user_id'];
 
-// ─── LOGOUT ───────────────────────────────────────────────────────
 if (isset($_GET['logout'])) {
     session_destroy();
-    header('Location: user_login.php');
+    header('Location: login.php');
     exit;
 }
 
-// ─── CARGAR PEDIDOS DEL USUARIO ───────────────────────────────────
 $orders = $db->prepare("
     SELECT p.id, p.quantity, p.price, p.direccion, p.estado, p.created_at,
            pr.name AS product_name, pr.image AS product_image, pr.category
@@ -30,13 +28,11 @@ $orders = $db->prepare("
 $orders->execute([$uid]);
 $orders = $orders->fetchAll(PDO::FETCH_ASSOC);
 
-// ─── STATS DEL USUARIO ────────────────────────────────────────────
-$totalPedidos  = count($orders);
-$totalGastado  = array_sum(array_map(fn($o) => $o['price'] * $o['quantity'], $orders));
-$pendientes    = count(array_filter($orders, fn($o) => $o['estado'] === 'pendiente'));
-$entregados    = count(array_filter($orders, fn($o) => $o['estado'] === 'entregado'));
+$totalPedidos = count($orders);
+$totalGastado = array_sum(array_map(fn($o) => $o['price'] * $o['quantity'], $orders));
+$pendientes   = count(array_filter($orders, fn($o) => $o['estado'] === 'pendiente'));
+$entregados   = count(array_filter($orders, fn($o) => $o['estado'] === 'entregado'));
 
-// Badge colors por estado
 $estadoClass = [
     'pendiente'  => 'badge-pendiente',
     'procesando' => 'badge-procesando',
@@ -45,11 +41,11 @@ $estadoClass = [
     'cancelado'  => 'badge-cancelado',
 ];
 $estadoLabel = [
-    'pendiente'  => '⏳ Pendiente',
-    'procesando' => '⚙️ Procesando',
-    'enviado'    => '🚚 Enviado',
-    'entregado'  => '✅ Entregado',
-    'cancelado'  => '✕ Cancelado',
+    'pendiente'  => 'Pendiente',
+    'procesando' => 'Procesando',
+    'enviado'    => 'Enviado',
+    'entregado'  => 'Entregado',
+    'cancelado'  => 'Cancelado',
 ];
 ?>
 <!DOCTYPE html>
@@ -63,22 +59,20 @@ $estadoLabel = [
 </head>
 <body class="dash-body">
 
-<!-- TOPBAR -->
 <header class="dash-topbar">
-  <a href="index.php" class="logo">⚡Tech<span>Store</span></a>
+  <a href="../index.php" class="logo">&#9889;Tech<span>Store</span></a>
   <div class="dash-topbar-center">
     <span class="topbar-tag">MI CUENTA</span>
   </div>
   <div class="dash-topbar-right">
     <span class="user-greeting">Hola, <strong><?= htmlspecialchars($_SESSION['user_name']) ?></strong></span>
-    <a href="index.php" class="topbar-link">← Tienda</a>
+    <a href="../index.php" class="topbar-link">&larr; Tienda</a>
     <a href="?logout=1" class="logout-btn">Salir</a>
   </div>
 </header>
 
 <div class="dash-main">
 
-  <!-- HERO DE USUARIO -->
   <div class="user-hero">
     <div class="user-avatar"><?= strtoupper(substr($_SESSION['user_name'], 0, 2)) ?></div>
     <div class="user-info">
@@ -87,7 +81,6 @@ $estadoLabel = [
     </div>
   </div>
 
-  <!-- STATS -->
   <div class="user-stats">
     <div class="ustat-card">
       <div class="ustat-label">Pedidos totales</div>
@@ -95,7 +88,7 @@ $estadoLabel = [
     </div>
     <div class="ustat-card">
       <div class="ustat-label">Total gastado</div>
-      <div class="ustat-value success">€<?= number_format($totalGastado, 2) ?></div>
+      <div class="ustat-value success">&euro;<?= number_format($totalGastado, 2) ?></div>
     </div>
     <div class="ustat-card">
       <div class="ustat-label">Pendientes</div>
@@ -107,20 +100,18 @@ $estadoLabel = [
     </div>
   </div>
 
-  <!-- PEDIDOS -->
   <div class="section-header">
     <h2>Mis pedidos</h2>
-    <a href="index.php" class="btn-shop">+ Seguir comprando</a>
+    <a href="../index.php" class="btn-shop">+ Seguir comprando</a>
   </div>
 
   <?php if (empty($orders)): ?>
     <div class="empty-state">
-      <div class="empty-icon">🛒</div>
-      <h3>Aún no tienes pedidos</h3>
-      <p>Explora la tienda y encuentra tu próximo producto favorito.</p>
-      <a href="index.php" class="auth-btn" style="display:inline-block;margin-top:1.5rem;text-decoration:none">Ir a la tienda →</a>
+      <div class="empty-icon">&#128722;</div>
+      <h3>Aun no tienes pedidos</h3>
+      <p>Explora la tienda y encuentra tu proximo producto favorito.</p>
+      <a href="../index.php" class="auth-btn" style="display:inline-block;margin-top:1.5rem;text-decoration:none">Ir a la tienda &rarr;</a>
     </div>
-
   <?php else: ?>
     <div class="orders-list">
       <?php foreach ($orders as $o): ?>
@@ -131,7 +122,7 @@ $estadoLabel = [
         <div class="order-body">
           <div class="order-top">
             <div>
-              <div class="order-product"><?= htmlspecialchars($o['product_name'] ?? '—') ?></div>
+              <div class="order-product"><?= htmlspecialchars($o['product_name'] ?? '&mdash;') ?></div>
               <div class="order-cat"><?= htmlspecialchars($o['category'] ?? '') ?></div>
             </div>
             <span class="badge <?= $estadoClass[$o['estado']] ?? 'badge-pendiente' ?>">
@@ -141,14 +132,14 @@ $estadoLabel = [
           <div class="order-meta">
             <div class="order-meta-item">
               <span class="meta-label">Cantidad</span>
-              <span class="meta-val">×<?= $o['quantity'] ?></span>
+              <span class="meta-val">&times;<?= $o['quantity'] ?></span>
             </div>
             <div class="order-meta-item">
               <span class="meta-label">Total</span>
-              <span class="meta-val accent">€<?= number_format($o['price'] * $o['quantity'], 2) ?></span>
+              <span class="meta-val accent">&euro;<?= number_format($o['price'] * $o['quantity'], 2) ?></span>
             </div>
             <div class="order-meta-item">
-              <span class="meta-label">Dirección</span>
+              <span class="meta-label">Direccion</span>
               <span class="meta-val"><?= htmlspecialchars($o['direccion']) ?></span>
             </div>
             <div class="order-meta-item">
