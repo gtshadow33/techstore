@@ -27,12 +27,7 @@ try {
 
     // 2. Si no esiste => registrar
     if (!$user) {
-        $hash = password_hash($password, PASSWORD_BCRYPT);
-        $stmt = $db->prepare("INSERT INTO usuarios (name, email, password) VALUES (?, ?, ?)");
-        $stmt->execute(['Cliente', $email, $hash]);
-        $usuario_id = $db->lastInsertId();
-
-    // 3. Si esiste => verificar contraseña
+         echo json_encode(["ok" => false, "error" => "Registre su cuenta en el apartado cuentas "]);
     } else {
         if (!password_verify($password, $user['password'])) {
             $db->rollBack();

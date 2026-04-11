@@ -47,6 +47,7 @@ $filtered = $stmt->fetchAll();
     <nav>
       <a href="index.php">Tienda</a>
       <a href="admin/login.php">Admin</a>
+      <a href="user_acount/login.php">Cuenta</a>
     </nav>
     <button class="cart-btn" onclick="toggleCart()">
       🛒 Carrito
