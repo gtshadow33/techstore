@@ -117,7 +117,8 @@ $filtered = $stmt->fetchAll();
   <div class="cart-items" id="cartItems"></div>
   <div class="cart-footer" id="cartFooter" style="display:none">
     <div class="cart-total">Total <span id="cartTotal">€0.00</span></div>
-    <button class="checkout-btn" onclick="alert('Función de pago no implementada.')">Proceder al pago →</button>
+    <input type="email" id="email" placeholder="Tu correo electrónico" required style="width:100%;padding:10px;margin-bottom:10px;">
+    <button class="checkout-btn" onclick="checkout()">Proceder al pago →</button>
   </div>
 </div>
 
@@ -191,6 +192,35 @@ function showToast(msg) {
   const t = document.getElementById('toast');
   t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+
+function checkout() {
+  const email = document.getElementById('email').value.trim();
+
+  if (!email) {
+    showToast('Introduce tu correo');
+    return;
+  }
+
+  if (cart.length === 0) return;
+
+  fetch('checkout.php', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ cart, email })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.ok) {
+      cart = [];
+      saveCart();
+      renderCart();
+      showToast('✔ Pedido realizado');
+    } else {
+      showToast('Error en el pedido');
+    }
+  });
 }
 
 renderCart();
