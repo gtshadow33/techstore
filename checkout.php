@@ -6,12 +6,17 @@ $data     = json_decode(file_get_contents("php://input"), true);
 $cart     = $data['cart']     ?? [];
 $email    = trim($data['email']    ?? '');
 $password = trim($data['password'] ?? '');
+$direcion = trim($data['direcion'] ?? '');
 
 if (!$email || !$password || empty($cart)) {
     echo json_encode(["ok" => false, "error" => "Datos inválidos"]);
     exit;
 }
 
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    echo json_encode(["ok" => false, "error" => "Email invalido"]);
+    exit;
+}
 try {
     $db->beginTransaction();
 
@@ -48,7 +53,7 @@ try {
             (int)$item['id'],
             (int)$item['qty'],
             (float)$item['price'],
-            'Sin dirección'
+            $direcion
         ]);
     }
 

@@ -43,7 +43,7 @@
   .page-header p { color: var(--muted); font-family: 'Space Mono', monospace; font-size: 0.8rem; margin-top: 4px; }
 
   /* STATS */
-  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
   .stat-card {
     background: var(--card); border: 1px solid var(--border);
     border-radius: 14px; padding: 1.2rem;
@@ -79,12 +79,32 @@
     color: var(--muted);
     text-transform: uppercase; letter-spacing: 1px;
   }
-  input[type=text], input[type=number], input[type=url], textarea, select {
-    background: var(--bg3); border: 1px solid var(--border);
-    border-radius: 10px; padding: 10px 14px;
-    color: var(--text); font-family: 'Space Mono', monospace; font-size: 0.85rem;
-    outline: none; transition: border-color 0.2s; width: 100%;
-  }
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="tel"],
+input[type="url"],
+input[type="search"],
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="month"],
+input[type="week"],
+input[type="color"],
+textarea,
+select {
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 14px;
+  color: var(--text);
+  font-family: 'Space Mono', monospace;
+  font-size: 0.85rem;
+  outline: none;
+  transition: border-color 0.2s;
+  width: 100%;
+}
   input:focus, textarea:focus, select:focus { border-color: var(--accent); }
   textarea { resize: vertical; min-height: 80px; }
   .form-actions { margin-top: 1.2rem; display: flex; gap: 0.75rem; flex-wrap: wrap; }

@@ -118,8 +118,9 @@ $filtered = $stmt->fetchAll();
   <div class="cart-footer" id="cartFooter" style="display:none">
   <div class="cart-total">Total <span id="cartTotal">€0.00</span></div>
  
-  <input  type="email"    id="email"    placeholder="Tu correo electrónico" style="width:100%;padding:10px;margin-bottom:8px;">
-  <input  type="password" id="password" placeholder="Contraseña (nueva o existente)" style="width:100%;padding:10px;margin-bottom:4px;">
+  <input  type="email"    id="email" require  placeholder="Tu correo electrónico" style="width:100%;padding:10px;margin-bottom:8px;">
+  <input  type="password" id="password" require placeholder="Contraseña (nueva o existente)" style="width:100%;padding:10px;margin-bottom:4px;">
+  <input  type="text" id="direccion" require placeholder="Direcion de envio" style="width:100%;padding:10px;margin-bottom:4px;">
   <p id="cart-hint" style="font-size:.75rem;color:var(--muted,#888);margin:0 0 10px">
     Si ya tienes cuenta introduce tu contraseña. Si no, se creará automáticamente.
   </p>
@@ -206,18 +207,22 @@ function showToast(msg) {
 function checkout() {
   const email    = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value.trim();
+  const direccion = document.getElementById('direccion').value.trim();
   const errEl    = document.getElementById('cart-error');
+
  
   errEl.style.display = 'none';
  
   if (!email) { showToast('Introduce tu correo'); return; }
   if (!password) { showToast('Introduce tu contraseña'); return; }
+  if (!direccion) { showToast('Introduce tu direccion'); return; }
+
   if (cart.length === 0) return;
  
   fetch('checkout.php', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ cart, email, password })
+    body: JSON.stringify({ cart, email, password,direccion })
   })
   .then(res => res.json())
   .then(data => {
