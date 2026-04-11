@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # --- SERVIDOR WEB (PHP + APACHE) ---
+  app:
+    build: .
+    container_name: techstore_app
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+    environment:
+      - DB_HOST=db
+      - DB_NAME=techstore
+      - DB_USER=user_tech
+      - DB_PASS=user_password
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # --- BASE DE DATOS (MYSQL) ---
+  db:
+    image: mysql:8.0
+    container_name: techstore_db
+    restart: always
+    environment:
+      MYSQL_DATABASE: techstore
+      MYSQL_USER: user_tech
+      MYSQL_PASSWORD: user_password
+      MYSQL_ROOT_PASSWORD: root_password
+    ports:
+      - "3306:3306"
+    volumes:
+      # Sincroniza tu archivo SQL para que se ejecute al iniciar
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      # Persistencia de datos (opcional, para no perder info al apagar)
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 5
+
+volumes:
+  mysql_data:
