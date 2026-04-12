@@ -141,22 +141,12 @@ $filtered = $stmt->fetchAll();
 
 <script src="/js/cart.js"></script>
 <script>
-  let detailQty = 1;
-  const maxStock = <?= (int)$p['stock'] ?>;
-
-  function changeDetailQty(delta) {
-    detailQty = Math.max(1, Math.min(maxStock, detailQty + delta));
-    document.getElementById('detailQty').textContent = detailQty;
-  }
-
-  function addToCartQty(product) {
+  function addToCart(product) {
     const i = cart.findIndex(x => x.id === product.id);
-    if (i > -1) cart[i].qty += detailQty;
-    else cart.push({ ...product, qty: detailQty });
+    if (i > -1) cart[i].qty++;
+    else cart.push({ ...product, qty: 1 });
     saveCart(); renderCart();
-    showToast('✓ ' + detailQty + '× ' + product.name + ' añadido');
-    detailQty = 1;
-    document.getElementById('detailQty').textContent = 1;
+    showToast('✓ ' + product.name + ' añadido');
   }
 </script>
 </body>

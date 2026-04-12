@@ -146,10 +146,7 @@ $related = $rel->fetchAll(PDO::FETCH_ASSOC);
   let detailQty = 1;
   const maxStock = <?= (int)$p['stock'] ?>;
 
-  function changeDetailQty(delta) {
-    detailQty = Math.max(1, Math.min(maxStock, detailQty + delta));
-    document.getElementById('detailQty').textContent = detailQty;
-  }
+
 
   function addToCartQty(product) {
     const i = cart.findIndex(x => x.id === product.id);
