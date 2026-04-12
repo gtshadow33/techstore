@@ -87,6 +87,7 @@ $filtered = $stmt->fetchAll();
   <div class="product-grid">
     <?php foreach ($filtered as $p): ?>
     <div class="product-card">
+        <a href="/product/product.php?id=<?= $p['id'] ?>">
       <img class="product-img" src="<?= htmlspecialchars($p['image']) ?>" alt="<?= htmlspecialchars($p['name']) ?>" loading="lazy">
       <div class="product-body">
         <div class="product-cat"><?= htmlspecialchars($p['category']) ?></div>
