@@ -37,11 +37,18 @@ CREATE TABLE IF NOT EXISTS admins (
     password VARCHAR(255) NOT NULL
 );
 
-
-
-
 INSERT INTO admins (username, password)
 VALUES ('admin', '$2a$12$bZ.CFXfB.uWx5P6qf8bZT.3v2QsWUKaxARO6WYlLSSQBfCxJEx5gG');
 
 INSERT INTO products (name, price, category, description, stock)
 VALUES ('Laptop Pro X1', 1299.99, 'Laptops', 'Una laptop potente para desarrollo y diseño con procesador de última generación.', 15);
+
+CREATE TRIGGER after_pedido_insert
+AFTER INSERT ON pedidos
+FOR EACH ROW
+UPDATE products SET stock = stock - NEW.quantity WHERE id = NEW.product_id;
+
+CREATE TRIGGER before_pedido_delete
+BEFORE DELETE ON pedidos
+FOR EACH ROW
+UPDATE products SET stock = stock + OLD.quantity WHERE id = OLD.product_id;
