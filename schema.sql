@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS pedidos (
     quantity    INT           NOT NULL DEFAULT 1,
     price       DECIMAL(10,2) NOT NULL,
     direccion   VARCHAR(255)  NOT NULL,
-    estado      ENUM('pendiente','procesando','enviado','entregado','cancelado') DEFAULT 'pendiente',
+    estado      ENUM('pendiente','procesando','enviado','entregado','cancelado', 'stock') DEFAULT 'pendiente',
     created_at  TIMESTAMP     DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (usuario_id) REFERENCES usuarios(id),
     FOREIGN KEY (product_id) REFERENCES products(id)

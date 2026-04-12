@@ -477,7 +477,7 @@ $activeTab = $_GET['tab'] ?? 'products';
                 <input type="hidden" name="action" value="update_order_status">
                 <input type="hidden" name="cart_ids" value="<?= $cart_ids_json ?>">
                 <select name="estado" class="estado-select" onchange="this.form.submit()">
-                  <?php foreach (['pendiente','procesando','enviado','entregado','cancelado'] as $s): ?>
+                  <?php foreach (['pendiente','procesando','enviado','entregado','cancelado','stock'] as $s): ?>
                     <option value="<?= $s ?>" <?= $cart['estado']===$s?'selected':'' ?>><?= ucfirst($s) ?></option>
                   <?php endforeach; ?>
                 </select>

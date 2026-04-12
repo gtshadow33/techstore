@@ -75,38 +75,28 @@ $filtered = $stmt->fetchAll();
   </div>
 </div>
 
-<div class="grid-wrap">
-  <p class="results-count"><?= count($filtered) ?> producto<?= count($filtered) !== 1 ? 's' : '' ?> encontrado<?= count($filtered) !== 1 ? 's' : '' ?></p>
-
-  <?php if (empty($filtered)): ?>
-    <div class="no-results">
-      <span class="icon">🔍</span>
-      <p>No se encontraron productos.</p>
-    </div>
-  <?php else: ?>
-  <div class="product-grid">
+<div class="product-grid">
     <?php foreach ($filtered as $p): ?>
     <div class="product-card">
         <a href="/product/product.php?id=<?= $p['id'] ?>">
-      <img class="product-img" src="<?= htmlspecialchars($p['image']) ?>" alt="<?= htmlspecialchars($p['name']) ?>" loading="lazy">
-      <div class="product-body">
-        <div class="product-cat"><?= htmlspecialchars($p['category']) ?></div>
-        <div class="product-name"><?= htmlspecialchars($p['name']) ?></div>
-        <div class="product-desc"><?= htmlspecialchars($p['description']) ?></div>
-        <div class="product-footer">
-          <div class="product-price"><span>€</span><?= number_format($p['price'], 2) ?></div>
-          <div class="stock-badge <?= $p['stock'] > 10 ? 'stock-ok' : 'stock-low' ?>">
-            <?= $p['stock'] > 0 ? 'Stock: '.$p['stock'] : 'Agotado' ?>
-          </div>
-        </div>
+            <img class="product-img" src="<?= htmlspecialchars($p['image']) ?>" alt="<?= htmlspecialchars($p['name']) ?>" loading="lazy">
+            <div class="product-body">
+                <div class="product-cat"><?= htmlspecialchars($p['category']) ?></div>
+                <div class="product-name"><?= htmlspecialchars($p['name']) ?></div>
+                <div class="product-desc"><?= htmlspecialchars($p['description']) ?></div>
+                <div class="product-footer">
+                    <div class="product-price"><span>€</span><?= number_format($p['price'], 2) ?></div>
+                    <div class="stock-badge <?= $p['stock'] > 10 ? 'stock-ok' : 'stock-low' ?>">
+                        <?= $p['stock'] > 0 ? 'Stock: ' . $p['stock'] : 'Agotado' ?>
+                    </div>
+                </div>
+            </div>
+        </a>
         <button class="add-btn" onclick='addToCart(<?= json_encode($p) ?>)' <?= $p['stock'] == 0 ? 'disabled' : '' ?>>
-          <?= $p['stock'] > 0 ? '+ Añadir al carrito' : 'Sin stock' ?>
+            <?= $p['stock'] > 0 ? '+ Añadir al carrito' : 'Sin stock' ?>
         </button>
-      </div>
     </div>
     <?php endforeach; ?>
-  </div>
-  <?php endif; ?>
 </div>
 
 <!-- CART -->

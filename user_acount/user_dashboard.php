@@ -39,6 +39,7 @@ $estadoClass = [
     'enviado'    => 'badge-enviado',
     'entregado'  => 'badge-entregado',
     'cancelado'  => 'badge-cancelado',
+    'stock'      => 'badge-cancelado',
 ];
 $estadoLabel = [
     'pendiente'  => 'Pendiente',
@@ -46,6 +47,7 @@ $estadoLabel = [
     'enviado'    => 'Enviado',
     'entregado'  => 'Entregado',
     'cancelado'  => 'Cancelado',
+    'stock'      => 'Falta stock en 3 dias le daremeos mas informacion',
 ];
 ?>
 <!DOCTYPE html>

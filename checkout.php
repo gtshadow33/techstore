@@ -37,21 +37,27 @@ try {
         $usuario_id = $user['id'];
     }
 
-    // 4. Guardar cada ítem del carrito como pedido
+    // 4. Guardar cada ítem del carrito como pedido si falta se pone en stock
     foreach ($cart as $item) {
-        $stmt = $db->prepare("
-            INSERT INTO pedidos (usuario_id, product_id, quantity, price, direccion)
-            VALUES (?, ?, ?, ?, ?)
-        ");
-        $stmt->execute([
-            $usuario_id,
-            (int)$item['id'],
-            (int)$item['qty'],
-            (float)$item['price'],
-            $direcion
-        ]);
-    }
+    $stmtCheck = $db->prepare("SELECT stock FROM products WHERE id = ?");
+    $stmtCheck->execute([(int)$item['id']]);
+    $product = $stmtCheck->fetch(PDO::FETCH_ASSOC);
 
+    $estado = ($product && $product['stock'] >= (int)$item['qty']) ? 'pendiente' : 'stock';
+
+    $stmt = $db->prepare("
+        INSERT INTO pedidos (usuario_id, product_id, quantity, price, direccion, estado)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ");
+    $stmt->execute([
+        $usuario_id,
+        (int)$item['id'],
+        (int)$item['qty'],
+        (float)$item['price'],
+        $direcion,
+        $estado
+    ]);
+}
     $db->commit();
     echo json_encode(["ok" => true]);
 
