@@ -139,14 +139,24 @@ $filtered = $stmt->fetchAll();
   <p>TechStore © 2026 · <a href="admin/login.php">Panel Admin</a></p>
 </footer>
 
-<script src="cart.js"></script>
+<script src="/js/cart.js"></script>
 <script>
-  function addToCart(product) {
+  let detailQty = 1;
+  const maxStock = <?= (int)$p['stock'] ?>;
+
+  function changeDetailQty(delta) {
+    detailQty = Math.max(1, Math.min(maxStock, detailQty + delta));
+    document.getElementById('detailQty').textContent = detailQty;
+  }
+
+  function addToCartQty(product) {
     const i = cart.findIndex(x => x.id === product.id);
-    if (i > -1) cart[i].qty++;
-    else cart.push({ ...product, qty: 1 });
+    if (i > -1) cart[i].qty += detailQty;
+    else cart.push({ ...product, qty: detailQty });
     saveCart(); renderCart();
-    showToast('✓ ' + product.name + ' añadido');
+    showToast('✓ ' + detailQty + '× ' + product.name + ' añadido');
+    detailQty = 1;
+    document.getElementById('detailQty').textContent = 1;
   }
 </script>
 </body>

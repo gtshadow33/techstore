@@ -141,7 +141,7 @@ $related = $rel->fetchAll(PDO::FETCH_ASSOC);
 <footer>
   <p>TechStore © 2026 · <a href="admin/login.php">Panel Admin</a></p>
 </footer>
-<script src="cart.js"></script>
+<script src="../js/cart.js"></script>
 <script>
   let detailQty = 1;
   const maxStock = <?= (int)$p['stock'] ?>;

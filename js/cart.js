@@ -104,4 +104,6 @@ function checkout() {
   });
 }
 
+
+
 renderCart();
