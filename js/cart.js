@@ -105,5 +105,34 @@ function checkout() {
 }
 
 
+// ── Lógica página producto ──────────────────────────────────────
+let detailQty = 1;
+
+function changeDetailQty(delta) {
+    detailQty = Math.max(1, detailQty + delta);
+    const el = document.getElementById('detailQty');
+    if (el) el.textContent = detailQty;
+}
+
+function addToCartQty(product) {
+    const i = cart.findIndex(x => x.id === product.id);
+    if (i > -1) cart[i].qty += detailQty;
+    else cart.push({ ...product, qty: detailQty });
+    saveCart(); renderCart();
+    showToast('✓ ' + detailQty + '× ' + product.name + ' añadido');
+    detailQty = 1;
+    const el = document.getElementById('detailQty');
+    if (el) el.textContent = 1;
+}
+
+// ── Lógica página index ─────────────────────────────────────────
+function addToCart(product) {
+    const i = cart.findIndex(x => x.id === product.id);
+    if (i > -1) cart[i].qty++;
+    else cart.push({ ...product, qty: 1 });
+    saveCart(); renderCart();
+    showToast('✓ ' + product.name + ' añadido');
+}
+
 
 renderCart();

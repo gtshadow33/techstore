@@ -6,24 +6,27 @@ $db = getDB();
 $search   = isset($_GET['search'])   ? strtolower(trim($_GET['search'])) : '';
 $category = isset($_GET['category']) ? trim($_GET['category'])           : '';
 
-// Categorías únicas
-$categories = $db->query("SELECT DISTINCT category FROM products ORDER BY category")
-                 ->fetchAll(PDO::FETCH_COLUMN);
+// Categorías únicas desde la tabla categorias
+$categories = $db->query("SELECT id, nombre FROM categorias ORDER BY nombre")
+                 ->fetchAll(PDO::FETCH_ASSOC);
 
-// Productos filtrados
-$sql    = "SELECT * FROM products WHERE 1=1";
+// Productos filtrados con JOIN a categorias
+$sql    = "SELECT p.*, c.nombre AS category 
+           FROM products p 
+           JOIN categorias c ON p.category_id = c.id 
+           WHERE 1=1";
 $params = [];
 
 if ($search !== '') {
-    $sql     .= " AND (LOWER(name) LIKE :s OR LOWER(description) LIKE :s2)";
+    $sql     .= " AND (LOWER(p.name) LIKE :s OR LOWER(p.description) LIKE :s2)";
     $params[':s']  = '%' . $search . '%';
     $params[':s2'] = '%' . $search . '%';
 }
 if ($category !== '') {
-    $sql     .= " AND category = :cat";
+    $sql     .= " AND c.nombre = :cat";
     $params[':cat'] = $category;
 }
-$sql .= " ORDER BY id DESC";
+$sql .= " ORDER BY p.id DESC";
 
 $stmt = $db->prepare($sql);
 $stmt->execute($params);
@@ -68,11 +71,15 @@ $filtered = $stmt->fetchAll();
     <?php if ($category): ?><input type="hidden" name="category" value="<?= htmlspecialchars($category) ?>"><?php endif; ?>
   </form>
   <div class="filter-pills">
-    <a href="index.php<?= $search ? '?search='.urlencode($search) : '' ?>" class="pill <?= $category==='' ? 'active' : '' ?>">Todo</a>
+    <a href="index.php<?= $search ? '?search='.urlencode($search) : '' ?>" 
+       class="pill <?= $category==='' ? 'active' : '' ?>">Todo</a>
     <?php foreach ($categories as $cat): ?>
-      <a href="?category=<?= urlencode($cat) ?><?= $search ? '&search='.urlencode($search) : '' ?>" class="pill <?= $category===$cat ? 'active' : '' ?>"><?= htmlspecialchars($cat) ?></a>
+      <a href="?category=<?= urlencode($cat['nombre']) ?><?= $search ? '&search='.urlencode($search) : '' ?>" 
+         class="pill <?= $category===$cat['nombre'] ? 'active' : '' ?>">
+        <?= htmlspecialchars($cat['nombre']) ?>
+      </a>
     <?php endforeach; ?>
-  </div>
+</div>
 </div>
 
 <div class="product-grid">
@@ -130,14 +137,6 @@ $filtered = $stmt->fetchAll();
 </footer>
 
 <script src="/js/cart.js"></script>
-<script>
-  function addToCart(product) {
-    const i = cart.findIndex(x => x.id === product.id);
-    if (i > -1) cart[i].qty++;
-    else cart.push({ ...product, qty: 1 });
-    saveCart(); renderCart();
-    showToast('✓ ' + product.name + ' añadido');
-  }
-</script>
+
 </body>
 </html>

@@ -5,13 +5,18 @@ $db = getDB();
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if (!$id) { header('Location: index.php'); exit; }
 
-$stmt = $db->prepare("SELECT * FROM products WHERE id = ?");
+$stmt = $db->prepare("
+  SELECT p.*, c.nombre AS category 
+  FROM products p
+  JOIN categorias c ON p.category_id = c.id
+  WHERE p.id = ?
+");
 $stmt->execute([$id]);
 $p = $stmt->fetch(PDO::FETCH_ASSOC);
 if (!$p) { header('Location: index.php'); exit; }
 
-$rel = $db->prepare("SELECT * FROM products WHERE category = ? AND id != ? ORDER BY id DESC LIMIT 4");
-$rel->execute([$p['category'], $id]);
+$rel = $db->prepare("SELECT * FROM products WHERE category_id = ? AND id != ? ORDER BY id DESC LIMIT 4");
+$rel->execute([$p['category_id'], $id]);
 $related = $rel->fetchAll(PDO::FETCH_ASSOC);
 ?>
 <!DOCTYPE html>
@@ -29,11 +34,11 @@ $related = $rel->fetchAll(PDO::FETCH_ASSOC);
 <!-- HEADER -->
 <header>
   <div class="header-inner">
-    <a href="index.php" class="logo">Tech<span>Store</span></a>
+    <a href="/index.php" class="logo">Tech<span>Store</span></a>
     <nav>
-      <a href="index.php">Tienda</a>
-      <a href="admin/login.php">Admin</a>
-      <a href="user_acount/login.php">Cuenta</a>
+      <a href="/index.php">Tienda</a>
+      <a href="/admin/login.php">Admin</a>
+      <a href="/user_acount/login.php">Cuenta</a>
     </nav>
     <button class="cart-btn" onclick="toggleCart()">
       🛒 Carrito
@@ -42,7 +47,7 @@ $related = $rel->fetchAll(PDO::FETCH_ASSOC);
   </div>
 </header>
 
-<a href="index.php" class="back-link">← Volver a la tienda</a>
+<a href="/index.php" class="back-link">← Volver a la tienda</a>
 
 <!-- DETALLE PRODUCTO -->
 <div class="product-detail">
@@ -53,8 +58,8 @@ $related = $rel->fetchAll(PDO::FETCH_ASSOC);
 
   <div class="detail-info">
     <div class="detail-breadcrumb">
-      <a href="index.php">Tienda</a> /
-      <a href="index.php?category=<?= urlencode($p['category']) ?>"><?= htmlspecialchars($p['category']) ?></a> /
+      <a href="/index.php">Tienda</a> /
+      <a href="/index.php?category=<?= urlencode($p['category']) ?>"><?= htmlspecialchars($p['category']) ?></a> /
       <span><?= htmlspecialchars($p['name']) ?></span>
     </div>
 
@@ -139,27 +144,9 @@ $related = $rel->fetchAll(PDO::FETCH_ASSOC);
 <div class="toast" id="toast"></div>
 
 <footer>
-  <p>TechStore © 2026 · <a href="admin/login.php">Panel Admin</a></p>
+  <p>TechStore © 2026 · <a href="/admin/login.php">Panel Admin</a></p>
 </footer>
 <script src="../js/cart.js"></script>
-<script>
-  let detailQty = 1;
 
-
- function changeDetailQty(delta) {
-    detailQty = Math.max(1, detailQty + delta);
-    document.getElementById('detailQty').textContent = detailQty;
-}
-
-  function addToCartQty(product) {
-    const i = cart.findIndex(x => x.id === product.id);
-    if (i > -1) cart[i].qty += detailQty;
-    else cart.push({ ...product, qty: detailQty });
-    saveCart(); renderCart();
-    showToast('✓ ' + detailQty + '× ' + product.name + ' añadido');
-    detailQty = 1;
-    document.getElementById('detailQty').textContent = 1;
-  }
-</script>
 </body>
 </html>

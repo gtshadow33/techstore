@@ -24,25 +24,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 
     // --- PRODUCTO ---
     if (in_array($_POST['action'], ['add_product', 'edit_product'])) {
-        $name        = trim($_POST['name']        ?? '');
-        $price       = (float)($_POST['price']    ?? 0);
-        $category    = trim($_POST['category']    ?? '');
-        $description = trim($_POST['description'] ?? '');
-        $image       = trim($_POST['image']       ?? '');
-        $stock       = (int)($_POST['stock']      ?? 0);
+        $name        = trim($_POST['name']         ?? '');
+        $price       = (float)($_POST['price']     ?? 0);
+        $category_id = (int)($_POST['category_id'] ?? 0);
+        $description = trim($_POST['description']  ?? '');
+        $image       = trim($_POST['image']        ?? '');
+        $stock       = (int)($_POST['stock']       ?? 0);
         if (!$image) $image = 'https://images.unsplash.com/photo-1518770660439-4636190af475?w=400&q=80';
 
         if ($_POST['action'] === 'add_product') {
-            $stmt = $db->prepare("INSERT INTO products (name, price, category, description, image, stock)
-                                  VALUES (:name, :price, :category, :description, :image, :stock)");
-            $stmt->execute(compact('name','price','category','description','image','stock'));
+            $stmt = $db->prepare("INSERT INTO products (name, price, category_id, description, image, stock)
+                                  VALUES (:name, :price, :category_id, :description, :image, :stock)");
+            $stmt->execute(compact('name','price','category_id','description','image','stock'));
             header("Location: dashboard.php?tab=products&msg=added"); exit;
         }
         if ($_POST['action'] === 'edit_product') {
             $id = (int)$_POST['id'];
-            $stmt = $db->prepare("UPDATE products SET name=:name, price=:price, category=:category,
+            $stmt = $db->prepare("UPDATE products SET name=:name, price=:price, category_id=:category_id,
                                   description=:description, image=:image, stock=:stock WHERE id=:id");
-            $stmt->execute(compact('name','price','category','description','image','stock','id'));
+            $stmt->execute(compact('name','price','category_id','description','image','stock','id'));
             header("Location: dashboard.php?tab=products&msg=edited"); exit;
         }
     }
@@ -117,9 +117,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
 }
 
 // ─── CARGAR DATOS ────────────────────────────────────────────────
-$products = $db->query("SELECT * FROM products ORDER BY id DESC")->fetchAll();
-$users    = $db->query("SELECT id, name, email, created_at FROM usuarios ORDER BY id DESC")->fetchAll();
-$orders   = $db->query("
+$products = $db->query("
+    SELECT p.*, c.nombre AS category
+    FROM products p
+    JOIN categorias c ON p.category_id = c.id
+    ORDER BY p.id DESC
+")->fetchAll();
+
+$categorias = $db->query("SELECT id, nombre FROM categorias ORDER BY nombre")->fetchAll();
+
+$users = $db->query("SELECT id, name, email, created_at FROM usuarios ORDER BY id DESC")->fetchAll();
+
+$orders = $db->query("
     SELECT p.id, p.quantity, p.price, p.direccion, p.estado, p.created_at,
            u.id AS usuario_id,
            u.name AS user_name, u.email AS user_email,
@@ -161,7 +170,12 @@ foreach ($orders as $o) {
 // ─── EDIT MODES ──────────────────────────────────────────────────
 $editProduct = null;
 if (isset($_GET['edit'])) {
-    $stmt = $db->prepare("SELECT * FROM products WHERE id = :id");
+    $stmt = $db->prepare("
+        SELECT p.*, c.nombre AS category
+        FROM products p
+        JOIN categorias c ON p.category_id = c.id
+        WHERE p.id = :id
+    ");
     $stmt->execute([':id' => (int)$_GET['edit']]);
     $editProduct = $stmt->fetch() ?: null;
 }
@@ -205,7 +219,6 @@ $activeTab = $_GET['tab'] ?? 'products';
 <title>Admin Dashboard — TechStore</title>
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800&display=swap" rel="stylesheet">
 <link href="./dasj.css" rel="stylesheet">
-
 </head>
 <body>
 <div class="topbar">
@@ -289,8 +302,15 @@ $activeTab = $_GET['tab'] ?? 'products';
           </div>
           <div class="form-group">
             <label>Categoría</label>
-            <input type="text" name="category" required placeholder="Ej: Audio, Monitores..."
-                   value="<?= $editProduct ? htmlspecialchars($editProduct['category']) : '' ?>">
+            <select name="category_id" required>
+              <option value="">— Selecciona —</option>
+              <?php foreach ($categorias as $cat): ?>
+                <option value="<?= $cat['id'] ?>"
+                  <?= ($editProduct && $editProduct['category_id'] == $cat['id']) ? 'selected' : '' ?>>
+                  <?= htmlspecialchars($cat['nombre']) ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
           </div>
           <div class="form-group">
             <label>Stock</label>
